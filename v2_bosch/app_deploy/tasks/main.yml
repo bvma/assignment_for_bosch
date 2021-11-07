@@ -1,0 +1,109 @@
+---
+# tasks file for app_deploy
+
+- set_fact:
+    app_full_path: "{{ app_path + '/' + app_name }}"
+    docker_compose_file_path: "{{app_path + '/' + app_name + '/docker-compose.yml'}}"
+    app_ansible_local_path: "{{ 'files/' + app_name }}"
+
+- debug:
+    var: app_full_path
+
+- debug:
+    var: docker_compose_file_path
+
+- debug:
+    var: app_ansible_local_path
+
+
+- name: Check if folder exists for "{{ app_name }}"
+  file:
+    path: "{{ app_path }}"
+    state: directory
+    mode: 0777
+
+- name: Check if application exists
+  stat:
+    path: "{{ app_full_path }}"
+  register: app_location
+
+
+#We used syncronize module due to performance.
+#The syncronize module is not working with variable
+#If you need to use variable for path use the copy module
+
+- name : Deploy app
+  copy:
+    src: "{{app_ansible_local_path}}"
+    dest: "{{app_path}}"
+  when: not app_location.stat.exists
+
+#Bug in Syncronize module. The variables are not replaced correctly.
+#- name: Sync app folder
+#  synchronize:
+#    src: files/bosch_app
+#    dest: /srv/test_app/bosch_app
+
+- name: Check if port "{{app_port}}" is used by another container
+  shell: docker container ls | grep "{{app_port}}"
+  register: container_port
+#  ignore_errors: yes
+  changed_when: false
+  failed_when: false
+
+- name: Deploy docker-compose file from template
+  template:
+    src: docker-compose.j2
+    dest: "{{docker_compose_file_path}}"
+    mode: 0777
+
+#- name: Check if port "{{app_port}}" is used by another container
+#  shell: docker container ls | grep "{{app_port}}"
+#  register: container_port
+#  ignore_errors: yes
+#  changed_when: false
+#  failed_when: false
+
+- name: Check if app "{{app_name}}" is used by another container
+  shell: docker container ls | grep "{{app_name}}"
+  register: container_app
+#  ignore_errors: yes
+  changed_when: false
+  failed_when: false
+
+- debug:
+    var: container_port
+
+- debug:
+    var: container_app
+
+- assert:
+    that:
+      - container_app.rc != 0
+    fail_msg: "FAIL: Another container for the app {{app_name}} is allready running"
+
+- name: Start container using docker compose
+  shell: (cd "{{app_full_path}}" && docker-compose up -d)
+  register: docker_compose_container
+  failed_when: false
+  changed_when: false
+
+- assert:
+    that:
+      - docker_compose_container.rc == 0
+    fail_msg: "FAIL: Container cloud not be started"
+
+- name: Check if container started
+  shell: docker ps | grep bosch_app
+  register: docker_running_container
+  failed_when: false
+  changed_when: false
+
+- assert:
+    that:
+      - docker_running_container.rc == 0 
+    fail_msg: "FAIL: Container was not started"
+
+- name: Pause for 5 seconds 
+  pause:
+    seconds: 5

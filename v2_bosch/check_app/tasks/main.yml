@@ -1,0 +1,16 @@
+---
+# tasks file for check_app
+- name: Get host ip
+  set_fact:
+    ip: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
+    a: 'http://'
+- set_fact:
+    test_url: "{{ a + ip + ':' + app_port|string }}"
+- debug:     
+    var: test_url
+
+- name: Check app response
+  shell: curl "{{test_url}}"
+  register: web_test
+  failed_when: web_test.rc != 0
+  changed_when: false

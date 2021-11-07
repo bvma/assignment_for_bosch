@@ -1,0 +1,3 @@
+---
+# vars file for check_app
+app_port: 3000
