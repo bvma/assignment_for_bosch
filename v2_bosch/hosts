@@ -1,0 +1,18 @@
+[all]
+192.168.1.104
+#192.168.1.105
+#192.168.1.12u9
+
+[all:vars]
+ansible_ssh_user=root
+ansible_ssh_pass=1234
+app_port=3000
+app_name=bosch_app
+
+#the app_path cannot be used with the syncronize task in app deploy
+#The syncronize module is more effiecient than copy but it has a bug.You cannot use variables in it.
+#You can try to use ansible collection for this module. it could be fixed in the meanwile
+#default(hardcoded) path for the suncronize module is /srv/test_app/bosch_app
+
+app_path=/srv/test_app
+#app_dockerfile_path=/srv/test_app/app
