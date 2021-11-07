@@ -1,0 +1,15 @@
+---
+# tasks file for patching_system
+
+- name: Upgrade all packages
+  yum:
+    name: '*'
+    state: latest
+#  register: patching
+#  ignore_errors: true
+
+- name: Install extra packages
+  yum:
+    name: "{{ packages }}"
+    state: present
+  with_items: "{{ packages }}"

@@ -1,0 +1,6 @@
+---
+# vars file for patching_system
+
+packages:
+  - rsync
+  - tree
