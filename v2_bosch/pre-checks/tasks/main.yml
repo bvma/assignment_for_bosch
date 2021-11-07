@@ -1,0 +1,32 @@
+---
+# tasks file for pre-checks
+- name: set facts
+  set_fact:
+    mount: "{{ ansible_mounts | first }}"
+
+- name: Check OS
+  assert:
+    that:
+      - (ansible_distribution == "CentOS" and ansible_distribution_major_version | int >=7) or (ansible_distribution == "Ubuntu" and ansible_distribution_major_version | int >=20)
+    fail_msg: "Not a valid Linux distribution.Distribution is:{{ ansible_distribution}} and the major version is{{ansible_distribution_major_version}}"
+
+- name: Check disk space
+  assert:
+    that:
+      - mount.size_available > 3145728
+    fail_msg: "Not enough disk space. Disk space={{mount.size_available}}"
+
+- name: Check memmory
+  assert:
+    that:
+      - ansible_memory_mb.real.total > 10
+
+- name: Check connection to repo #we test iti with google dns ip
+  shell: ping -c 1 -w 2 8.8.8.8
+  changed_when: false
+
+- name: Check python major version
+  assert:
+    that:
+      - ansible_python.version.major == 3
+    fail_msg: "Python is not version 3"
